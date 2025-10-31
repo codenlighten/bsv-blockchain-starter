@@ -1,0 +1,242 @@
+# BSV Blockchain Starter Template - .gitignore
+
+# === SECURITY - NEVER COMMIT THESE ===
+# Wallet files containing private keys
+wallets/wallet.json
+wallets/publishing-wallet.json
+wallets/sweep-wallet.json
+wallets/*.json
+!wallets/README.md
+!wallets/.gitignore
+
+# Environment variables and secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Zero-knowledge proof files (may contain sensitive data)
+wallets/zk-proof.json
+!wallets/zk-proof.json.example
+*.zk
+*.proof
+
+# === NODE.JS ===
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+lib-cov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# === DATABASE ===
+# MongoDB dumps
+*.dump
+*.bson
+dump/
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# === DEVELOPMENT ===
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === LOGS ===
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# === TEMPORARY FILES ===
+# Temporary folders
+tmp/
+temp/
+
+# Build outputs
+build/
+dist/
+out/
+
+# === BACKUP FILES ===
+# Project backups
+*.zip
+*backup*
+*BACKUP*
+*-backup-*
+*ORGANIZED*
+
+# === TESTING ===
+# Test outputs
+coverage/
+.coverage
+*.lcov
+
+# Jest
+.jest/
+
+# === BSV BLOCKCHAIN SPECIFIC ===
+# Transaction logs (may contain sensitive UTXO data)
+transactions.log
+utxo-history.log
+
+# Private blockchain data
+private-keys/
+mnemonics/
+seeds/
+
+# Local blockchain data
+blockchain-data/
+.bitcoin/
+.bsv/
+
+# === MONGODB SPECIFIC ===
+# Local MongoDB data
+data/db/
+mongod.lock
+
+# === DOCUMENTATION BUILD ===
+# Generated documentation
+docs/build/
+docs/dist/
+
+# === DEPLOYMENT ===
+# Deployment configs (may contain secrets)
+docker-compose.override.yml
+.dockerignore
+Dockerfile.local
+
+# Kubernetes secrets
+k8s-secrets/
+*.secret.yaml
+
+# === PACKAGE MANAGERS ===
+# Package manager locks (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+
+# === MISC ===
+# Miscellaneous
+.sass-cache/
+connect.lock
+libpeerconnection.log
+testem.log
+
+# Runtime configuration
+.runtime
+
+# Local development overrides
+local.*
+*.local
+
+# === PROJECT SPECIFIC ===
+# Custom project files that shouldn't be committed
+TODO.private.md
+NOTES.private.md
+.private/
+private/
+
+# Development scripts
+scripts/dev-*
+scripts/local-*
+
+# === SECURITY NOTES ===
+# This .gitignore is designed to prevent accidental exposure of:
+# 1. Private keys and wallet files
+# 2. Environment variables with API keys/passwords
+# 3. MongoDB connection strings with credentials
+# 4. Any other sensitive BSV blockchain data
+#
+# ALWAYS REVIEW before committing any new file types!

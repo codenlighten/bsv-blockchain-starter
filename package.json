@@ -1,0 +1,35 @@
+{
+  "name": "bsv-blockchain-starter",
+  "version": "1.0.0",
+  "description": "BSV Blockchain Starter Template with MongoDB UTXO Management and Interactive Setup",
+  "main": "src/publishMongo.js",
+  "type": "module",
+  "scripts": {
+    "init": "node init.js",
+    "start": "node src/publishMongo.js",
+    "generate-keys": "node scripts/generate-wallet-keys.js",
+    "split-utxos": "node src/splitUtxos.js split",
+    "publish": "node src/publishMongo.js",
+    "get-utxos": "node src/getUtxosMongo.js",
+    "extract": "node scripts/extract-op-return.js",
+    "zk-proof": "node scripts/zk-proof.js",
+    "signature": "node scripts/signature.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "backup": "zip -r \"backup-$(date +%Y%m%d-%H%M%S).zip\" . -x node_modules/\\* .git/\\* \\*.log",
+    "clean": "rm -rf node_modules package-lock.json && npm install"
+  },
+  "keywords": ["bsv", "blockchain", "starter-template", "utxo", "mongodb", "bitcoin", "publishing", "template"],
+  "author": "BSV Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.20.0",
+    "mongoose": "^8.19.2",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.10",
+    "smartledger-bsv": "^3.3.5"
+  }
+}

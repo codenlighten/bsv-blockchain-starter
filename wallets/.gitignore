@@ -1,0 +1,6 @@
+# Wallet Security - Git Ignore
+*.json
+*.key
+*.wif
+*.priv
+.env
