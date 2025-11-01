@@ -13,10 +13,11 @@
 - Enterprise implementation and integration services
 - Government digital identity framework partnerships
 
-📧 **Contact Methods:**
+📧 **Primary Licensing Contact:**
+- **Email:** greg@smartledger.solutions
 - **LinkedIn:** [Connect with Gregory Ward](https://linkedin.com/in/codenlighten)
 - **GitHub:** [@codenlighten](https://github.com/codenlighten)
-- **Technical Consultation:** Available for enterprise partnerships
+- **All Licensing Inquiries:** greg@smartledger.solutions
 
 ---
 
@@ -31,8 +32,9 @@
 - Large-scale blockchain infrastructure deployment
 
 📧 **Partnership Contact:**
+- **Email:** greg@smartledger.solutions
 - **Website:** SmartLedger.technology
-- **Enterprise Sales:** Available through direct partnership inquiry
+- **Enterprise Sales:** greg@smartledger.solutions
 - **Government Services:** Specialized public sector blockchain solutions
 - **Technical Integration:** 24/7 support for enterprise deployments
 
@@ -49,6 +51,7 @@
 - Predictive legal analytics and risk assessment
 
 📧 **AI Partnership Contact:**
+- **Email:** greg@smartledger.solutions
 - **Website:** AgilityAI.org
 - **AI Consulting:** Custom AI legal workflow development
 - **ML Integration:** Machine learning compliance solutions
@@ -84,10 +87,11 @@
 ## 🎯 **Licensing Inquiry Process**
 
 ### 📋 **Step 1: Initial Contact**
-1. **Reach out** to Gregory Ward directly for revolutionary technology discussion
-2. **Contact SmartLedger.technology** for enterprise blockchain infrastructure
-3. **Connect with AgilityAI.org** for AI-enhanced legal workflow development
-4. **Specify your industry** and deployment requirements
+1. **Email greg@smartledger.solutions** for all licensing inquiries
+2. **Contact Gregory Ward directly** at greg@smartledger.solutions for revolutionary technology discussion
+3. **Enterprise blockchain infrastructure** inquiries: greg@smartledger.solutions
+4. **AI-enhanced legal workflow development**: greg@smartledger.solutions
+5. **Specify your industry** and deployment requirements in your initial email
 
 ### 🤝 **Step 2: Partnership Discussion**
 1. **Technical demonstration** of live blockchain legal platform
@@ -142,9 +146,10 @@
 **🎼⛓️⚖️ Contact Gregory Ward and the SmartLedger.technology/AgilityAI.org partnership network to license the world's first blockchain-verified, privacy-preserving legal technology platform. Transform your industry with revolutionary cryptographic legal innovation. ⚖️⛓️🎼**
 
 ### 📧 **Quick Contact Summary**
-- **Revolutionary Creator:** Gregory Ward (codenlighten) - Direct consultation
-- **Enterprise Infrastructure:** SmartLedger.technology - Blockchain consulting
-- **AI-Enhanced Legal:** AgilityAI.org - Workflow automation
+- **Primary Licensing Contact:** greg@smartledger.solutions
+- **Revolutionary Creator:** Gregory Ward (codenlighten) - greg@smartledger.solutions
+- **Enterprise Infrastructure:** SmartLedger.technology - greg@smartledger.solutions
+- **AI-Enhanced Legal:** AgilityAI.org - greg@smartledger.solutions
 - **GitHub Repository:** [AI Record Label Platform](https://github.com/codenlighten/ai_record_label)
 - **Live Platform:** Deployed on BSV mainnet with real blockchain transactions
 

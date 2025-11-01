@@ -187,12 +187,21 @@
 
 ## 📞 **Licensing Contact Information**
 
+### 📧 **Primary Licensing Contact**
+**greg@smartledger.solutions**
+**Gregory Ward (codenlighten) - Creator & Co-Founder**
+- All licensing inquiries and partnership discussions
+- White-label platform licensing ($500K - $2M)
+- Industry vertical and geographic licensing opportunities
+- Strategic partnership and joint venture negotiations
+
 ### 🏢 **Enterprise & Government Partnerships**
 **SmartLedger.technology**
 - Enterprise blockchain infrastructure and consulting
 - Government digital identity framework partnerships
 - Cross-chain legal technology implementation
 - Regulatory compliance automation solutions
+- **Contact:** greg@smartledger.solutions
 
 ### 🤖 **AI-Enhanced Legal Technology**
 **AgilityAI.org**
@@ -200,6 +209,7 @@
 - Machine learning compliance monitoring
 - Intelligent contract analysis and optimization
 - Automated legal document generation
+- **Contact:** greg@smartledger.solutions
 
 ### 👨‍💻 **Direct Creator Consultation**
 **Gregory Ward (codenlighten)**
@@ -207,6 +217,7 @@
 - Custom platform development and extension
 - Strategic technology partnership development
 - Direct consultation on blockchain legal innovation
+- **Contact:** greg@smartledger.solutions
 
 ---
 
