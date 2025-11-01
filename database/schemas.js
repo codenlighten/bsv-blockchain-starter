@@ -1,12 +1,12 @@
 /**
- * LabLedger MongoDB Database Schema
- * Comprehensive collection framework for laboratory data integrity platform
+ * AI Record Label Platform MongoDB Database Schema
+ * Comprehensive collection framework for music industry rights management and revenue distribution
  */
 
 import mongoose from 'mongoose';
 
 // =============================================
-// 1. USER COLLECTION SCHEMA
+// 1. USER COLLECTION SCHEMA (MUSIC INDUSTRY)
 // =============================================
 
 const userSchema = new mongoose.Schema({
@@ -45,28 +45,38 @@ const userSchema = new mongoose.Schema({
   profile: {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    title: { type: String }, // Lab Director, Technician, etc.
+    stageName: { type: String }, // Artist stage name if applicable
+    title: { type: String }, // Producer, Songwriter, Label Executive, etc.
     phone: { type: String },
     organization: { 
-      type: String, // Use organizationId string instead of ObjectId
+      type: String, // Record label, publishing company, etc.
       required: true,
       index: true
+    },
+    bio: { type: String }, // Artist or professional biography
+    website: { type: String },
+    socialMedia: {
+      instagram: { type: String },
+      twitter: { type: String },
+      tiktok: { type: String },
+      youtube: { type: String },
+      spotify: { type: String }
     }
   },
   
   // Role and Permissions
   role: {
     type: String,
-    enum: ['lab_admin', 'lab_technician', 'regulator', 'auditor', 'system_admin'],
+    enum: ['label_admin', 'a_r_manager', 'producer', 'songwriter', 'ai_artist_manager', 'rights_manager', 'revenue_manager', 'system_admin'],
     required: true,
     index: true
   },
   permissions: [{
     type: String,
     enum: [
-      'submit_data', 'sign_reports', 'notarize_blockchain', 
-      'view_audit_trail', 'manage_users', 'verify_compliance',
-      'generate_zk_proofs', 'access_raw_data', 'admin_system'
+      'create_artists', 'manage_catalog', 'publish_music', 'manage_rights',
+      'calculate_revenue', 'distribute_payments', 'view_analytics', 
+      'generate_reports', 'verify_ownership', 'admin_system'
     ]
   }],
   
@@ -96,13 +106,22 @@ const userSchema = new mongoose.Schema({
   loginAttempts: { type: Number, default: 0 },
   lockoutUntil: { type: Date },
   
-  // Lab-Specific Data
-  labCertifications: [{
-    certification: { type: String }, // NELAP, EPA, etc.
+  // Music Industry Specific Data
+  musicCredentials: [{
+    type: { type: String }, // ASCAP, BMI, SESAC, Grammy Voting Member, etc.
     number: { type: String },
     expiryDate: { type: Date },
     isActive: { type: Boolean, default: true }
   }],
+  
+  // Publishing and Rights Information
+  publishingInfo: {
+    ascap: { type: String }, // ASCAP member number
+    bmi: { type: String }, // BMI member number
+    sesac: { type: String }, // SESAC member number
+    soundExchange: { type: String },
+    performanceRights: [{ type: String }] // Other performance rights organizations
+  },
   
   // Security Settings
   security: {
@@ -141,86 +160,329 @@ const userSchema = new mongoose.Schema({
 });
 
 // =============================================
-// 2. NOTARIZATIONS COLLECTION SCHEMA
+// 2. AI ARTISTS COLLECTION SCHEMA
 // =============================================
 
-const notarizationSchema = new mongoose.Schema({
+const aiArtistSchema = new mongoose.Schema({
   // Unique Identifiers
-  notarizationId: {
+  artistId: {
     type: String,
     required: true,
     unique: true,
     index: true
   },
   
-  // Lab Sample Information
-  sample: {
-    sampleId: { type: String, required: true, index: true },
-    labId: { type: String, required: true, index: true },
-    location: {
-      siteId: { type: String },
-      coordinates: {
-        latitude: { type: Number },
-        longitude: { type: Number }
-      },
-      address: { type: String },
-      state: { type: String, index: true },
-      county: { type: String }
-    },
-    collectionDate: { type: Date, required: true, index: true },
-    sampleType: { 
+  // Artist Identity
+  identity: {
+    name: { type: String, required: true, index: true },
+    stageName: { type: String, required: true, unique: true, index: true },
+    type: { 
       type: String, 
-      enum: ['soil', 'groundwater', 'air', 'produced_water', 'surface_water'],
+      enum: ['ai_generated', 'ai_assisted', 'human_collab'],
       required: true,
       index: true
+    },
+    genre: [{ type: String, required: true, index: true }], // Primary genres
+    subgenres: [{ type: String }], // Secondary genres
+    language: { type: String, default: 'en', index: true },
+    country: { type: String, default: 'US' }
+  },
+  
+  // AI Persona Configuration
+  persona: {
+    backstory: { type: String, required: true },
+    personality: { type: String }, // Personality description
+    visualStyle: { type: String, required: true }, // Art direction for images
+    musicStyle: { type: String, required: true }, // Musical characteristics
+    voiceProfile: {
+      type: { type: String, required: true }, // Voice type: male, female, non-binary
+      range: { type: String }, // Vocal range: soprano, alto, tenor, bass
+      style: { type: String }, // Singing style: pop, operatic, rap, etc.
+      characteristics: [{ type: String }], // Unique voice traits
+      modelId: { type: String } // AI voice model identifier
+    },
+    demographics: {
+      apparentAge: { type: Number },
+      apparentGender: { type: String },
+      culturalBackground: { type: String },
+      fictionalLocation: { type: String }
     }
   },
   
-  // Lab Analysis Data
-  analysis: {
-    analytes: [{
-      name: { type: String, required: true }, // benzene, arsenic, etc.
-      value: { type: Number, required: true },
-      units: { type: String, required: true }, // ppb, ppm, mg/L
-      detectionLimit: { type: Number },
-      quantificationLimit: { type: Number },
-      qualifiers: [{ type: String }], // J, U, B flags
-      method: { type: String }, // EPA 8260, 524.2, etc.
-      casNumber: { type: String }
-    }],
-    qaqc: {
-      blankResults: [{ analyte: String, value: Number }],
-      duplicateResults: [{ analyte: String, value: Number, rpdPercent: Number }],
-      spikeRecovery: [{ analyte: String, recoveryPercent: Number }],
-      surrogateRecovery: [{ surrogate: String, recoveryPercent: Number }]
+  // Visual Assets
+  artwork: {
+    profileImage: { type: String }, // Path to main profile image
+    albumCovers: [{ type: String }], // Paths to album artwork
+    promotionalImages: [{ type: String }],
+    avatarConfig: { type: mongoose.Schema.Types.Mixed }, // 3D avatar configuration
+    visualBrand: {
+      colorPalette: [{ type: String }], // Hex color codes
+      fonts: [{ type: String }],
+      logoUrl: { type: String }
+    }
+  },
+  
+  // Music Generation Configuration
+  musicGeneration: {
+    instruments: [{ type: String }], // Preferred instruments
+    musicTheory: {
+      preferredKeys: [{ type: String }], // C major, A minor, etc.
+      timeSignatures: [{ type: String }], // 4/4, 3/4, etc.
+      tempoRange: { min: Number, max: Number }, // BPM range
+      scaleModes: [{ type: String }] // Major, minor, dorian, etc.
     },
-    labCertifications: [{ type: String }], // NELAP numbers
-    analysisDate: { type: Date, required: true },
-    reportDate: { type: Date, required: true }
+    productionStyle: {
+      arrangement: { type: String }, // Dense, sparse, layered, minimal
+      dynamics: { type: String }, // Loud, soft, dynamic, compressed
+      effects: [{ type: String }], // Reverb, delay, distortion, etc.
+      mixing: { type: String } // Clean, lo-fi, vintage, modern
+    },
+    lyricalThemes: [{ type: String }], // Love, adventure, technology, etc.
+    collaborationPrefs: {
+      humanCollabAllowed: { type: Boolean, default: true },
+      remixRights: { type: String, enum: ['open', 'restricted', 'none'], default: 'restricted' },
+      samplingAllowed: { type: Boolean, default: false }
+    }
   },
   
-  // Regulatory Compliance
-  compliance: {
-    thresholds: [{
-      analyte: { type: String, required: true },
-      limit: { type: Number, required: true },
-      regulation: { type: String }, // EPA, state-specific
-      isCompliant: { type: Boolean, required: true }
-    }],
-    overallCompliant: { type: Boolean, required: true, index: true },
-    regulatoryForms: [{
-      formType: { type: String }, // Form 27, etc.
-      submissionDate: { type: Date },
-      confirmationNumber: { type: String }
-    }]
+  // Performance and Analytics
+  performance: {
+    totalStreams: { type: Number, default: 0, index: true },
+    monthlyListeners: { type: Number, default: 0 },
+    followerCount: { type: Number, default: 0 },
+    songsReleased: { type: Number, default: 0 },
+    lastReleaseDate: { type: Date, index: true },
+    topCountries: [{ country: String, streams: Number }],
+    demographics: {
+      ageGroups: { type: mongoose.Schema.Types.Mixed },
+      genderSplit: { type: mongoose.Schema.Types.Mixed }
+    }
   },
   
-  // Cryptographic Proofs
+  // Cryptographic Identity
   cryptography: {
-    // Data Hash
-    dataHash: { type: String, required: true }, // SHA-256 of complete lab data
+    // Artist Identity Hash
+    identityHash: { type: String, required: true }, // SHA-256 of artist identity data
     
-    // Digital Signature
+    // Digital Signature for Artist Identity
+    signature: {
+      value: { type: String, required: true }, // DER encoded signature
+      publicKey: { type: String, required: true },
+      address: { type: String, required: true }, // BSV address for this artist
+      algorithm: { type: String, default: 'ECDSA-secp256k1' },
+      timestamp: { type: Date, default: Date.now }
+    },
+    
+    // Artist Keys (for signing their music)
+    artistKeys: {
+      privateKeyEncrypted: { type: String }, // Encrypted private key for artist
+      publicKey: { type: String, required: true },
+      address: { type: String, required: true, unique: true, index: true }
+    }
+  },
+  
+  // Blockchain Registration
+  blockchain: {
+    network: { type: String, default: 'BSV-mainnet', index: true },
+    registrationTxid: { type: String, unique: true, index: true },
+    blockHeight: { type: Number },
+    confirmations: { type: Number, default: 0 },
+    publishedAt: { type: Date, default: Date.now, index: true },
+    explorerUrl: { type: String }
+  },
+  
+  // Status and Lifecycle
+  status: {
+    type: String,
+    enum: ['created', 'active', 'inactive', 'retired', 'suspended'],
+    default: 'created',
+    index: true
+  },
+  
+  // Timestamps and Metadata
+  createdAt: { type: Date, default: Date.now, index: true },
+  updatedAt: { type: Date, default: Date.now },
+  createdBy: { type: String, required: true, index: true }, // User who created this AI artist
+  lastActivityAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true,
+  collection: 'ai_artists',
+  suppressReservedKeysWarning: true
+});
+
+// =============================================
+// 3. SONGS COLLECTION SCHEMA
+// =============================================
+
+const songSchema = new mongoose.Schema({
+  // Unique Identifiers
+  songId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+  
+  // Song Information
+  metadata: {
+    title: { type: String, required: true, index: true },
+    artistId: { type: String, required: true, index: true }, // Reference to AI artist
+    artistName: { type: String, required: true, index: true },
+    albumId: { type: String, index: true }, // Reference to album if part of one
+    albumName: { type: String },
+    trackNumber: { type: Number },
+    
+    // Musical Metadata
+    genre: { type: String, required: true, index: true },
+    subgenres: [{ type: String }],
+    mood: { type: String, index: true },
+    energy: { type: String }, // Low, medium, high
+    danceability: { type: Number, min: 0, max: 1 }, // 0-1 scale
+    valence: { type: Number, min: 0, max: 1 }, // Positivity 0-1 scale
+    
+    // Technical Information
+    duration: { type: Number, required: true }, // Duration in seconds
+    tempo: { type: Number }, // BPM
+    key: { type: String }, // Musical key (C, C#, D, etc.)
+    timeSignature: { type: String, default: '4/4' },
+    acousticness: { type: Number, min: 0, max: 1 },
+    instrumentalness: { type: Number, min: 0, max: 1 },
+    
+    // Release Information
+    releaseDate: { type: Date, required: true, index: true },
+    language: { type: String, default: 'en', index: true },
+    isExplicit: { type: Boolean, default: false },
+    isrc: { type: String, unique: true, sparse: true }, // International Standard Recording Code
+    
+    // Tags and Categories
+    tags: [{ type: String, index: true }], // Searchable tags
+    themes: [{ type: String }], // Lyrical or musical themes
+    instruments: [{ type: String }], // Primary instruments used
+  },
+  
+  // Audio Files and Assets
+  audioAssets: {
+    masterFile: { 
+      path: { type: String, required: true }, // Path to high-quality master
+      format: { type: String, required: true }, // WAV, FLAC, etc.
+      sampleRate: { type: Number, required: true }, // 44100, 48000, etc.
+      bitDepth: { type: Number, required: true }, // 16, 24, 32
+      fileSize: { type: Number }, // File size in bytes
+      checksum: { type: String, required: true } // File integrity hash
+    },
+    stems: [{ // Individual track elements
+      name: { type: String, required: true }, // Vocals, drums, bass, etc.
+      path: { type: String, required: true },
+      format: { type: String, required: true },
+      checksum: { type: String, required: true }
+    }],
+    mixVersions: [{ // Different mixes (radio edit, extended, etc.)
+      name: { type: String, required: true },
+      path: { type: String, required: true },
+      duration: { type: Number },
+      checksum: { type: String, required: true }
+    }],
+    artwork: {
+      coverArt: { type: String }, // Path to album/single artwork
+      lyricVideo: { type: String }, // Path to lyric video
+      musicVideo: { type: String }, // Path to music video
+      visualizer: { type: String } // Path to audio visualizer
+    }
+  },
+  
+  // Lyrics and Content
+  lyrics: {
+    hasLyrics: { type: Boolean, default: true },
+    content: { type: String }, // Full lyrics text
+    structure: [{ // Verse, chorus, bridge, etc.
+      section: { type: String, required: true },
+      lyrics: { type: String, required: true },
+      timestamp: { type: Number } // Start time in seconds
+    }],
+    language: { type: String, default: 'en' },
+    writers: [{ type: String, required: true }], // Lyric writers
+    publishers: [{ type: String }]
+  },
+  
+  // Rights and Ownership
+  rights: {
+    songwriter: [{ 
+      name: { type: String, required: true },
+      share: { type: Number, required: true }, // Percentage (0-100)
+      role: { type: String }, // Lyricist, composer, etc.
+      contact: { type: String }
+    }],
+    producer: [{ 
+      name: { type: String, required: true },
+      share: { type: Number, required: true },
+      role: { type: String }, // Producer, co-producer, etc.
+      contact: { type: String }
+    }],
+    performer: [{ 
+      name: { type: String, required: true },
+      share: { type: Number, required: true },
+      role: { type: String }, // Lead vocals, backing vocals, etc.
+      isAI: { type: Boolean, default: false }
+    }],
+    publisher: { 
+      name: { type: String, required: true },
+      share: { type: Number, required: true, default: 100 },
+      contact: { type: String }
+    },
+    label: { 
+      name: { type: String, required: true },
+      share: { type: Number, required: true },
+      contact: { type: String }
+    },
+    masteredBy: { type: String },
+    mixedBy: { type: String }
+  },
+  
+  // Licensing and Usage Rights
+  licensing: {
+    syncLicensing: { type: Boolean, default: true }, // Available for TV/film
+    samplingAllowed: { type: Boolean, default: false },
+    remixRights: { 
+      type: String, 
+      enum: ['open', 'contact-label', 'restricted', 'none'],
+      default: 'contact-label' 
+    },
+    commercialUse: { type: Boolean, default: true },
+    exclusivity: {
+      isExclusive: { type: Boolean, default: false },
+      exclusiveUntil: { type: Date },
+      exclusiveTerritory: { type: String }
+    },
+    publishingRights: {
+      mechanicalRights: { type: Boolean, default: true },
+      performanceRights: { type: Boolean, default: true },
+      synchronizationRights: { type: Boolean, default: true },
+      printRights: { type: Boolean, default: true }
+    }
+  },
+  
+  // Revenue and Performance
+  performance: {
+    totalStreams: { type: Number, default: 0, index: true },
+    totalDownloads: { type: Number, default: 0 },
+    totalRevenue: { type: Number, default: 0, index: true }, // In satoshis
+    syncLicenses: { type: Number, default: 0 },
+    platformStreams: {
+      spotify: { type: Number, default: 0 },
+      appleMusic: { type: Number, default: 0 },
+      youtube: { type: Number, default: 0 },
+      amazonMusic: { type: Number, default: 0 },
+      other: { type: Number, default: 0 }
+    },
+    lastUpdated: { type: Date, default: Date.now }
+  },
+  
+  // Cryptographic Proof of Ownership
+  cryptography: {
+    // Song Content Hash
+    contentHash: { type: String, required: true }, // SHA-256 of audio content + metadata
+    
+    // Digital Signature for Ownership
     signature: {
       value: { type: String, required: true }, // DER encoded signature
       publicKey: { type: String, required: true },
@@ -228,12 +490,11 @@ const notarizationSchema = new mongoose.Schema({
       timestamp: { type: Date, default: Date.now }
     },
     
-    // Zero-Knowledge Proof (if applicable)
+    // Zero-Knowledge Proof for Revenue Privacy (if applicable)
     zkProof: {
       hasProof: { type: Boolean, default: false },
-      commitment: { type: String }, // Commitment hash
+      revenueCommitment: { type: String }, // Commitment hash for private revenue
       proofHash: { type: String }, // ZK proof hash
-      proofData: { type: mongoose.Schema.Types.Mixed }, // Encrypted proof data
       verificationKey: { type: String }
     }
   },
@@ -241,72 +502,58 @@ const notarizationSchema = new mongoose.Schema({
   // Blockchain Information
   blockchain: {
     network: { type: String, default: 'BSV-mainnet', index: true },
-    txid: { type: String, required: true, unique: true, index: true },
+    txid: { type: String, unique: true, index: true },
     blockHeight: { type: Number },
     blockHash: { type: String },
     confirmations: { type: Number, default: 0 },
     fee: { type: Number }, // satoshis
     publishedAt: { type: Date, default: Date.now, index: true },
-    opReturnData: { type: String }, // Raw OP_RETURN hex
+    opReturnData: { type: String }, // Raw OP_RETURN hex with song data
     explorerUrl: { type: String }
   },
-  
-  // Chain of Custody
-  chainOfCustody: [{
-    step: { type: Number, required: true },
-    action: { 
-      type: String, 
-      enum: ['collected', 'received', 'analyzed', 'signed', 'submitted'],
-      required: true 
-    },
-    userId: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
-    location: { type: String },
-    notes: { type: String },
-    signature: { type: String }, // Digital signature of this step
-    witnessId: { type: String }
-  }],
-  
-  // User Information
-  submittedBy: {
-    userId: { type: String, required: true, index: true },
-    role: { type: String, required: true },
-    organization: { type: String, required: true }
-  },
-  
-  // File Attachments
-  attachments: [{
-    filename: { type: String, required: true },
-    fileType: { type: String }, // PDF, CSV, etc.
-    size: { type: Number },
-    hash: { type: String }, // SHA-256 of file
-    uploadDate: { type: Date, default: Date.now },
-    encryptedPath: { type: String }, // Encrypted storage path
-    metadata: { type: mongoose.Schema.Types.Mixed }
-  }],
   
   // Status and Workflow
   status: {
     type: String,
-    enum: ['draft', 'signed', 'notarized', 'submitted', 'verified', 'disputed'],
+    enum: ['draft', 'mastered', 'signed', 'published', 'distributed', 'active', 'archived'],
     default: 'draft',
     index: true
   },
-  workflowStep: { type: String, index: true },
-  reviewedBy: [{ 
+  
+  // Distribution and Platform Status
+  distribution: {
+    platforms: [{
+      name: { type: String, required: true }, // Spotify, Apple Music, etc.
+      status: { 
+        type: String, 
+        enum: ['pending', 'submitted', 'approved', 'live', 'rejected'],
+        default: 'pending' 
+      },
+      submittedAt: { type: Date },
+      liveAt: { type: Date },
+      platformId: { type: String }, // Platform-specific song ID
+      url: { type: String } // Direct link to song on platform
+    }],
+    distributionDate: { type: Date },
+    distributor: { type: String } // DistroKid, CD Baby, etc.
+  },
+  
+  // Creation and Management
+  createdBy: { type: String, required: true, index: true }, // User who created/uploaded
+  approvedBy: [{ 
     userId: String, 
-    reviewDate: Date, 
-    status: String, 
+    approvalDate: Date, 
+    role: String, 
     comments: String 
   }],
   
   // Timestamps
   createdAt: { type: Date, default: Date.now, index: true },
   updatedAt: { type: Date, default: Date.now },
-  expiryDate: { type: Date } // For data retention policies
+  archivedAt: { type: Date } // When song was archived/removed
 }, {
   timestamps: true,
-  collection: 'notarizations',
+  collection: 'songs',
   suppressReservedKeysWarning: true
 });
 
@@ -790,15 +1037,24 @@ const organizationSchema = new mongoose.Schema({
 // INDEXES AND PERFORMANCE OPTIMIZATION
 // =============================================
 
-// Compound indexes for common queries
+// Compound indexes for common music industry queries
 userSchema.index({ 'profile.organization': 1, role: 1, status: 1 });
 userSchema.index({ email: 1, status: 1 });
 userSchema.index({ 'cryptoIdentity.address': 1 });
 
-notarizationSchema.index({ 'sample.labId': 1, 'sample.collectionDate': -1 });
-notarizationSchema.index({ 'blockchain.txid': 1, 'blockchain.network': 1 });
-notarizationSchema.index({ 'submittedBy.userId': 1, createdAt: -1 });
-notarizationSchema.index({ 'compliance.overallCompliant': 1, 'sample.state': 1 });
+// AI Artist indexes
+aiArtistSchema.index({ 'identity.genre': 1, status: 1 });
+aiArtistSchema.index({ 'identity.name': 1, 'identity.stageName': 1 });
+aiArtistSchema.index({ 'cryptography.artistKeys.address': 1 });
+aiArtistSchema.index({ 'performance.totalStreams': -1 });
+
+// Song indexes
+songSchema.index({ 'metadata.artistId': 1, 'metadata.releaseDate': -1 });
+songSchema.index({ 'metadata.genre': 1, 'metadata.mood': 1 });
+songSchema.index({ 'blockchain.txid': 1, 'blockchain.network': 1 });
+songSchema.index({ 'performance.totalStreams': -1 });
+songSchema.index({ 'performance.totalRevenue': -1 });
+songSchema.index({ status: 1, 'metadata.releaseDate': -1 });
 
 auditTrailSchema.index({ 'actor.userId': 1, timestamp: -1 });
 auditTrailSchema.index({ 'event.type': 1, 'event.category': 1, timestamp: -1 });
@@ -1336,16 +1592,471 @@ bondPaymentSchema.index({ holderId: 1, paymentDate: -1 });
 bondPaymentSchema.index({ paymentId: 1, bondId: 1 });
 
 // =============================================
+// AUDIT LOG SCHEMA
+// =============================================
+const auditLogSchema = new mongoose.Schema({
+  // Core audit information
+  action: { 
+    type: String, 
+    required: true,
+    enum: [
+      'USER_CREATED', 'USER_UPDATED', 'USER_LOGIN', 'USER_LOGOUT',
+      'SONG_UPLOADED', 'SONG_UPDATED', 'SONG_DELETED',
+      'MUSIC_PLAY', 'MUSIC_DOWNLOAD', 'MUSIC_STREAM',
+      'MICRO_PAYMENT', 'REVENUE_DISTRIBUTION', 'ROYALTY_PAYMENT',
+      'LICENSE_CREATED', 'LICENSE_UPDATED', 'LICENSE_EXPIRED',
+      'BLOCKCHAIN_TRANSACTION', 'CRYPTO_SIGNATURE', 'KEY_ROTATION',
+      'AUDIT_BATCH_COMMIT', 'SYSTEM_EVENT', 'SECURITY_EVENT'
+    ],
+    index: true
+  },
+  
+  // Entity information
+  entityType: { 
+    type: String, 
+    required: true,
+    enum: ['user', 'song', 'artist', 'license', 'payment', 'system'],
+    index: true
+  },
+  entityId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    required: true,
+    index: true
+  },
+  
+  // User who performed the action
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
+    index: true
+  },
+  
+  // Timestamp
+  timestamp: { 
+    type: Date, 
+    default: Date.now,
+    index: true
+  },
+  
+  // Detailed information about the action
+  details: {
+    // Request information
+    ipAddress: { type: String },
+    userAgent: { type: String },
+    sessionId: { type: String },
+    
+    // Action-specific data
+    amount: { type: Number }, // For payment actions
+    currency: { type: String }, // BSV, USD, etc.
+    playDuration: { type: Number }, // For music play events
+    quality: { type: String }, // audio quality
+    platform: { type: String }, // web, mobile, api
+    location: { type: String }, // geographic location
+    deviceType: { type: String }, // desktop, mobile, tablet
+    
+    // Before/after states for updates
+    previousState: { type: mongoose.Schema.Types.Mixed },
+    newState: { type: mongoose.Schema.Types.Mixed },
+    
+    // Additional metadata
+    metadata: { type: mongoose.Schema.Types.Mixed }
+  },
+  
+  // Blockchain verification
+  blockchainHash: { 
+    type: String,
+    index: true
+  },
+  verified: { 
+    type: Boolean, 
+    default: false,
+    index: true
+  },
+  batchId: { 
+    type: String,
+    index: true
+  },
+  
+  // Security and integrity
+  checksum: { type: String }, // Data integrity verification
+  signature: { type: String }, // Cryptographic signature if applicable
+  
+  // Processing status
+  processed: { 
+    type: Boolean, 
+    default: false,
+    index: true
+  },
+  processedAt: { type: Date }
+}, {
+  timestamps: true,
+  collection: 'auditLogs'
+});
+
+// Indexes for efficient querying
+auditLogSchema.index({ action: 1, timestamp: -1 });
+auditLogSchema.index({ entityType: 1, entityId: 1, timestamp: -1 });
+auditLogSchema.index({ userId: 1, timestamp: -1 });
+auditLogSchema.index({ blockchainHash: 1 });
+auditLogSchema.index({ batchId: 1 });
+auditLogSchema.index({ verified: 1, processed: 1 });
+
+// =============================================
 // MODEL EXPORTS
 // =============================================
 
 export const User = mongoose.model('User', userSchema);
-export const Notarization = mongoose.model('Notarization', notarizationSchema);
+export const AIArtist = mongoose.model('AIArtist', aiArtistSchema);
+export const Song = mongoose.model('Song', songSchema);
 export const AuditTrail = mongoose.model('AuditTrail', auditTrailSchema);
-export const LabSample = mongoose.model('LabSample', labSampleSchema);
+export const AuditLog = mongoose.model('AuditLog', auditLogSchema);
 export const ZKProof = mongoose.model('ZKProof', zkProofSchema);
 export const Organization = mongoose.model('Organization', organizationSchema);
 export const UTXO = mongoose.model('UTXO', utxoSchema);
+
+/**
+ * Licensing Schema
+ * Tracks licensing agreements, sync deals, and usage rights
+ */
+const LicensingSchema = new mongoose.Schema({
+  licenseId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+  songId: {
+    type: String,
+    required: true,
+    index: true
+  },
+  songTitle: String,
+  artist: String,
+  
+  licenseType: {
+    type: String,
+    required: true,
+    enum: ['sync', 'commercial', 'mechanical', 'performance', 'sampling', 'remix', 'cover']
+  },
+  
+  licensee: {
+    name: { type: String, required: true },
+    email: String,
+    company: String,
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      country: String,
+      postalCode: String
+    }
+  },
+  
+  terms: {
+    territory: { type: String, default: 'Worldwide' },
+    duration: { type: String, default: '1 year' },
+    durationDays: { type: Number, default: 365 },
+    exclusivity: { type: String, enum: ['exclusive', 'non-exclusive'], default: 'non-exclusive' },
+    usage: String,
+    fee: { type: Number, default: 0 }, // in satoshis
+    royaltyRate: { type: Number, default: 0 }, // percentage
+    paymentTerms: { type: String, default: 'Net 30' },
+    maxUses: Number,
+    audienceLimit: Number
+  },
+  
+  restrictions: [String],
+  rights: [String],
+  
+  status: {
+    type: String,
+    enum: ['pending', 'active', 'expired', 'terminated', 'breach'],
+    default: 'pending'
+  },
+  
+  usage: [{
+    usageId: String,
+    date: Date,
+    project: String,
+    medium: String, // tv, film, digital, radio, etc
+    territory: String,
+    duration: Number, // seconds of music used
+    audience: Number,
+    revenue: Number, // revenue generated in satoshis
+    description: String,
+    metadata: mongoose.Schema.Types.Mixed
+  }],
+  
+  payments: [{
+    paymentId: String,
+    amount: Number, // satoshis
+    currency: { type: String, default: 'BSV' },
+    txid: String, // blockchain transaction
+    date: Date,
+    type: { type: String, enum: ['license_fee', 'royalty', 'usage_fee'] },
+    status: { type: String, enum: ['pending', 'confirmed', 'failed'] }
+  }],
+  
+  legalText: String,
+  
+  // Timestamps
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  validFrom: Date,
+  validUntil: Date,
+  
+  // Audit trail
+  auditLog: [{
+    action: String,
+    actor: String,
+    timestamp: { type: Date, default: Date.now },
+    changes: mongoose.Schema.Types.Mixed,
+    ipAddress: String
+  }]
+});
+
+// Create indexes
+LicensingSchema.index({ songId: 1, licenseType: 1 });
+LicensingSchema.index({ 'licensee.name': 1 });
+LicensingSchema.index({ status: 1 });
+LicensingSchema.index({ validFrom: 1, validUntil: 1 });
+
+export const Licensing = mongoose.model('Licensing', LicensingSchema);
+
+/**
+ * Revenue Distribution Schema
+ * Tracks revenue calculations and payment distributions
+ */
+const RevenueDistributionSchema = new mongoose.Schema({
+  distributionId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+  songId: {
+    type: String,
+    required: true,
+    index: true
+  },
+  songTitle: String,
+  artist: String,
+  
+  distributionType: {
+    type: String,
+    required: true,
+    enum: ['streaming', 'sync', 'mechanical', 'performance', 'sales'],
+    index: true
+  },
+  
+  // Revenue amounts
+  totalRevenue: { type: Number, required: true }, // Original total revenue
+  netRevenue: { type: Number, required: true }, // After platform/category adjustments
+  revenueMultiplier: { type: Number, default: 1.0 }, // Category multiplier applied
+  
+  // Distribution breakdown
+  distributions: [{
+    recipientType: { 
+      type: String, 
+      enum: ['songwriter', 'producer', 'performer', 'publisher', 'label'],
+      required: true 
+    },
+    recipientName: { type: String, required: true },
+    recipientContact: String,
+    role: String, // specific role like 'lead vocalist', 'co-producer'
+    sharePercentage: { type: Number, required: true }, // Their percentage of this category
+    amount: { type: Number, required: true }, // Calculated payment amount in satoshis
+    currency: { type: String, default: 'BSV' },
+    isAI: { type: Boolean, default: false },
+    status: { 
+      type: String, 
+      enum: ['calculated', 'pending', 'paid', 'failed'],
+      default: 'calculated' 
+    }
+  }],
+  
+  // Payment processing
+  payments: [{
+    paymentId: String,
+    distributionId: String,
+    recipientName: String,
+    recipientContact: String,
+    recipientType: String,
+    amount: Number,
+    currency: { type: String, default: 'BSV' },
+    status: { 
+      type: String, 
+      enum: ['pending', 'confirmed', 'failed', 'simulated'],
+      default: 'pending' 
+    },
+    createdAt: { type: Date, default: Date.now },
+    confirmedAt: Date,
+    
+    blockchain: {
+      network: { type: String, default: 'BSV-mainnet' },
+      fromAddress: String,
+      toAddress: String,
+      txid: String,
+      fee: Number,
+      confirmations: { type: Number, default: 0 }
+    },
+    
+    error: String
+  }],
+  
+  // Status and timing
+  status: {
+    type: String,
+    enum: ['calculated', 'processing', 'completed', 'failed', 'simulated'],
+    default: 'calculated',
+    index: true
+  },
+  
+  calculatedAt: { type: Date, default: Date.now },
+  processedAt: Date,
+  completedAt: Date,
+  
+  // Metadata
+  metadata: {
+    platformData: mongoose.Schema.Types.Mixed, // Platform-specific breakdown
+    period: String, // Reporting period
+    batchId: String // If part of batch processing
+  },
+  
+  // Audit trail
+  auditLog: [{
+    action: String,
+    actor: String,
+    timestamp: { type: Date, default: Date.now },
+    changes: mongoose.Schema.Types.Mixed
+  }]
+});
+
+// Create indexes for revenue distribution
+RevenueDistributionSchema.index({ songId: 1, calculatedAt: -1 });
+RevenueDistributionSchema.index({ distributionType: 1, status: 1 });
+RevenueDistributionSchema.index({ 'distributions.recipientName': 1 });
+RevenueDistributionSchema.index({ 'payments.status': 1, 'payments.createdAt': -1 });
+
+export const RevenueDistribution = mongoose.model('RevenueDistribution', RevenueDistributionSchema);
+
+/**
+ * Workflow Execution Schema
+ * Tracks automated workflow executions and results
+ */
+const WorkflowExecutionSchema = new mongoose.Schema({
+  workflowId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+  
+  type: {
+    type: String,
+    required: true,
+    enum: ['weekly_content_generation', 'platform_sync', 'backup', 'revenue_distribution', 'rights_verification'],
+    index: true
+  },
+  
+  status: {
+    type: String,
+    required: true,
+    enum: ['running', 'completed', 'partial', 'failed'],
+    default: 'running',
+    index: true
+  },
+  
+  // Execution metrics
+  targetCount: Number, // Target number of items to process
+  successCount: { type: Number, default: 0 },
+  failCount: { type: Number, default: 0 },
+  processedCount: { type: Number, default: 0 },
+  partialCount: { type: Number, default: 0 },
+  
+  // Execution results
+  results: [{
+    itemId: String, // Song ID, Artist ID, etc.
+    itemType: String, // 'song', 'artist', 'license', etc.
+    status: String, // 'success', 'failed', 'partial'
+    data: mongoose.Schema.Types.Mixed, // Results data
+    error: String // Error message if failed
+  }],
+  
+  // Generated content (for content generation workflows)
+  generatedContent: [{
+    songId: String,
+    title: String,
+    artist: String,
+    genre: String,
+    status: String,
+    audioPath: String,
+    error: String
+  }],
+  
+  // Sync results (for platform sync workflows)
+  syncResults: [{
+    songId: String,
+    title: String,
+    platforms: [{
+      platform: String,
+      status: String,
+      platformId: String,
+      url: String,
+      error: String
+    }],
+    overallStatus: String,
+    error: String
+  }],
+  
+  // Configuration used for execution
+  configuration: {
+    songsPerWeek: Number,
+    platforms: [String],
+    genreDistribution: mongoose.Schema.Types.Mixed,
+    qualityThreshold: Number,
+    autoPublish: Boolean,
+    autoDistribute: Boolean
+  },
+  
+  // Timing information
+  startedAt: { type: Date, default: Date.now },
+  completedAt: Date,
+  duration: Number, // milliseconds
+  
+  // Error information
+  error: {
+    message: String,
+    stack: String,
+    code: String
+  },
+  
+  // Performance metrics
+  performance: {
+    averageProcessingTime: Number, // ms per item
+    peakMemoryUsage: Number,
+    totalApiCalls: Number,
+    failureRate: Number // percentage
+  },
+  
+  // Audit trail
+  executedBy: { type: String, default: 'system' },
+  trigger: { 
+    type: String, 
+    enum: ['manual', 'scheduled', 'event', 'api'],
+    default: 'manual' 
+  },
+  
+  // Metadata
+  metadata: mongoose.Schema.Types.Mixed
+});
+
+// Create indexes for workflow execution
+WorkflowExecutionSchema.index({ type: 1, status: 1, startedAt: -1 });
+WorkflowExecutionSchema.index({ executedBy: 1, startedAt: -1 });
+WorkflowExecutionSchema.index({ trigger: 1, type: 1 });
+
+export const WorkflowExecution = mongoose.model('WorkflowExecution', WorkflowExecutionSchema);
 
 // Bond-related models
 export const Bond = mongoose.model('Bond', bondSchema);
@@ -1362,7 +2073,7 @@ export const connectDatabase = async () => {
     }
     
     await mongoose.connect(mongoUri, {
-      dbName: process.env.DB_NAME || 'bsv-blockchain-starter',
+      dbName: process.env.DB_NAME || 'ai-records',
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,

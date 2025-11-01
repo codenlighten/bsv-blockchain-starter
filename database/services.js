@@ -1,13 +1,13 @@
 /**
- * LabLedger Database Service Layer
- * Comprehensive CRUD operations with automatic audit trail generation
+ * AI Record Label Platform Database Service Layer
+ * Comprehensive CRUD operations with automatic audit trail generation for music industry
  */
 
 import { 
   User, 
-  Notarization, 
+  AIArtist,
+  Song, 
   AuditTrail, 
-  LabSample, 
   ZKProof, 
   Organization,
   UTXO
@@ -429,79 +429,363 @@ export class UserService {
 }
 
 // =============================================
-// NOTARIZATION SERVICE
+// AI ARTIST SERVICE
 // =============================================
 
-export class NotarizationService {
+export class ArtistService {
   
   /**
-   * Create new notarization
+   * Create new AI artist
    */
-  static async createNotarization(notarizationData, actorInfo = {}) {
+  static async createAIArtist(artistData, actorInfo = {}) {
     try {
-      const notarizationId = crypto.randomUUID();
+      const artistId = crypto.randomUUID();
       
-      const notarization = new Notarization({
-        notarizationId,
-        ...notarizationData,
+      // Generate cryptographic identity for the artist
+      const { signData, getAddressFromPrivateKey, getPublicKeyFromPrivateKey } = await import('../tools/der-signature.js');
+      const bsv = (await import('smartledger-bsv')).default;
+      
+      const artistPrivateKey = new bsv.PrivateKey();
+      const artistAddress = artistPrivateKey.toAddress().toString();
+      const artistPublicKey = artistPrivateKey.publicKey.toString();
+      
+      // Create identity hash
+      const identityData = JSON.stringify({
+        name: artistData.identity.name,
+        stageName: artistData.identity.stageName,
+        genre: artistData.identity.genre,
+        createdAt: new Date().toISOString()
+      });
+      const identityHash = crypto.createHash('sha256').update(identityData).digest('hex');
+      
+      // Sign the identity
+      const signature = await signData(identityHash, artistPrivateKey.toWIF());
+      
+      const artist = new AIArtist({
+        artistId,
+        ...artistData,
+        cryptography: {
+          identityHash,
+          signature: {
+            value: signature,
+            publicKey: artistPublicKey,
+            address: artistAddress,
+            timestamp: new Date()
+          },
+          artistKeys: {
+            privateKeyEncrypted: artistPrivateKey.toWIF(), // In production, this should be encrypted
+            publicKey: artistPublicKey,
+            address: artistAddress
+          }
+        },
+        createdBy: actorInfo.userId || 'system',
         createdAt: new Date(),
         updatedAt: new Date()
       });
       
-      await notarization.save();
+      await artist.save();
       
       await AuditService.createAuditEntry({
         event: {
-          type: 'data_notarized',
+          type: 'data_submitted',
+          category: 'data',
+          severity: 'info'
+        },
+        actor: actorInfo,
+        target: {
+          type: 'user',
+          id: artistId,
+          name: `AI Artist ${artistData.identity.stageName}`
+        },
+        details: {
+          description: `Created AI artist ${artistData.identity.stageName} with cryptographic identity`,
+          cryptography: {
+            hash: identityHash,
+            publicKey: artistPublicKey,
+            address: artistAddress
+          }
+        }
+      });
+      
+      return artist;
+      
+    } catch (error) {
+      throw new Error(`Failed to create AI artist: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Get artist by ID or address
+   */
+  static async getArtistById(artistId) {
+    return await AIArtist.findOne({ 
+      $or: [
+        { artistId },
+        { 'cryptography.artistKeys.address': artistId }
+      ]
+    });
+  }
+  
+  /**
+   * Search artists
+   */
+  static async searchArtists(filters = {}, options = {}) {
+    const query = {};
+    
+    if (filters.name) query['identity.name'] = new RegExp(filters.name, 'i');
+    if (filters.stageName) query['identity.stageName'] = new RegExp(filters.stageName, 'i');
+    if (filters.genre) query['identity.genre'] = { $in: Array.isArray(filters.genre) ? filters.genre : [filters.genre] };
+    if (filters.language) query['identity.language'] = filters.language;
+    if (filters.status) query.status = filters.status;
+    if (filters.type) query['identity.type'] = filters.type;
+    
+    if (filters.minStreams) query['performance.totalStreams'] = { $gte: filters.minStreams };
+    if (filters.createdBy) query.createdBy = filters.createdBy;
+    
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = options;
+    
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+    const skip = (page - 1) * limit;
+    
+    const artists = await AIArtist
+      .find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+      
+    const total = await AIArtist.countDocuments(query);
+    
+    return {
+      artists,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  }
+  
+  /**
+   * Update artist information
+   */
+  static async updateArtist(artistId, updateData, actorInfo = {}) {
+    try {
+      const artist = await AIArtist.findOne({ artistId });
+      if (!artist) {
+        throw new Error('AI Artist not found');
+      }
+      
+      const before = artist.toObject();
+      
+      // Update artist data
+      Object.assign(artist, updateData, { 
+        updatedAt: new Date(),
+        lastActivityAt: new Date()
+      });
+      
+      await artist.save();
+      
+      const after = artist.toObject();
+      const changedFields = Object.keys(updateData);
+      
+      await AuditService.createAuditEntry({
+        event: {
+          type: 'data_modified',
+          category: 'data',
+          severity: 'info'
+        },
+        actor: actorInfo,
+        target: {
+          type: 'user',
+          id: artistId,
+          name: `AI Artist ${artist.identity.stageName}`
+        },
+        details: {
+          description: `Updated AI artist profile`,
+          changes: {
+            before: Object.fromEntries(changedFields.map(field => [field, before[field]])),
+            after: Object.fromEntries(changedFields.map(field => [field, after[field]])),
+            fields: changedFields
+          }
+        }
+      });
+      
+      return artist;
+      
+    } catch (error) {
+      throw new Error(`Failed to update AI artist: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Update artist performance metrics
+   */
+  static async updatePerformanceMetrics(artistId, metrics, actorInfo = {}) {
+    try {
+      const artist = await AIArtist.findOne({ artistId });
+      if (!artist) {
+        throw new Error('AI Artist not found');
+      }
+      
+      // Update performance data
+      artist.performance = { ...artist.performance, ...metrics };
+      artist.lastActivityAt = new Date();
+      artist.updatedAt = new Date();
+      
+      await artist.save();
+      
+      await AuditService.createAuditEntry({
+        event: {
+          type: 'data_modified',
+          category: 'data',
+          severity: 'info'
+        },
+        actor: actorInfo,
+        target: {
+          type: 'user',
+          id: artistId,
+          name: `AI Artist ${artist.identity.stageName}`
+        },
+        details: {
+          description: `Updated performance metrics`,
+          metadata: metrics
+        }
+      });
+      
+      return artist;
+      
+    } catch (error) {
+      throw new Error(`Failed to update artist performance: ${error.message}`);
+    }
+  }
+}
+
+// =============================================
+// MUSIC CATALOG SERVICE
+// =============================================
+
+export class CatalogService {
+  
+  /**
+   * Create new song entry
+   */
+  static async createSong(songData, actorInfo = {}) {
+    try {
+      const songId = crypto.randomUUID();
+      
+      // Generate cryptographic signature for song ownership
+      const { signData } = await import('../tools/der-signature.js');
+      
+      // Create content hash from metadata and file checksums
+      const contentData = JSON.stringify({
+        title: songData.metadata.title,
+        artistId: songData.metadata.artistId,
+        duration: songData.metadata.duration,
+        audioAssets: songData.audioAssets,
+        rights: songData.rights,
+        createdAt: new Date().toISOString()
+      });
+      const contentHash = crypto.createHash('sha256').update(contentData).digest('hex');
+      
+      // Get platform keys for signing
+      const { createAgentKeys } = await import('../scripts/signature.js');
+      const platformKeys = createAgentKeys('platform');
+      const signature = await signData(contentHash, platformKeys.privateKey);
+      
+      const song = new Song({
+        songId,
+        ...songData,
+        cryptography: {
+          contentHash,
+          signature: {
+            value: signature,
+            publicKey: platformKeys.publicKey,
+            timestamp: new Date()
+          }
+        },
+        createdBy: actorInfo.userId || 'system',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      await song.save();
+      
+      await AuditService.createAuditEntry({
+        event: {
+          type: 'data_submitted',
           category: 'data',
           severity: 'info'
         },
         actor: actorInfo,
         target: {
           type: 'notarization',
-          id: notarizationId,
-          name: `Sample ${notarizationData.sample.sampleId}`
+          id: songId,
+          name: `Song ${songData.metadata.title} by ${songData.metadata.artistName}`
         },
         details: {
-          description: `Lab data notarized to blockchain`,
-          blockchain: {
-            txid: notarizationData.blockchain.txid,
-            network: notarizationData.blockchain.network
+          description: `Created song entry with cryptographic ownership proof`,
+          cryptography: {
+            hash: contentHash,
+            signature: signature,
+            publicKey: platformKeys.publicKey
           }
         }
       });
       
-      return notarization;
+      return song;
       
     } catch (error) {
-      throw new Error(`Failed to create notarization: ${error.message}`);
+      throw new Error(`Failed to create song: ${error.message}`);
     }
   }
   
   /**
-   * Get notarization by transaction ID
+   * Get song by ID or blockchain transaction
    */
-  static async getNotarizationByTxid(txid) {
-    return await Notarization.findOne({ 'blockchain.txid': txid });
+  static async getSongById(songId) {
+    return await Song.findOne({ 
+      $or: [
+        { songId },
+        { 'blockchain.txid': songId }
+      ]
+    });
   }
   
   /**
-   * Search notarizations
+   * Search songs in catalog
    */
-  static async searchNotarizations(filters = {}, options = {}) {
+  static async searchSongs(filters = {}, options = {}) {
     const query = {};
     
-    if (filters.sampleId) query['sample.sampleId'] = filters.sampleId;
-    if (filters.labId) query['sample.labId'] = filters.labId;
-    if (filters.state) query['sample.location.state'] = filters.state;
-    if (filters.compliant !== undefined) query['compliance.overallCompliant'] = filters.compliant;
+    if (filters.title) query['metadata.title'] = new RegExp(filters.title, 'i');
+    if (filters.artistId) query['metadata.artistId'] = filters.artistId;
+    if (filters.artistName) query['metadata.artistName'] = new RegExp(filters.artistName, 'i');
+    if (filters.genre) query['metadata.genre'] = filters.genre;
+    if (filters.mood) query['metadata.mood'] = filters.mood;
     if (filters.status) query.status = filters.status;
-    if (filters.txid) query['blockchain.txid'] = filters.txid;
+    if (filters.language) query['metadata.language'] = filters.language;
+    if (filters.isExplicit !== undefined) query['metadata.isExplicit'] = filters.isExplicit;
+    
+    if (filters.minDuration) query['metadata.duration'] = { $gte: filters.minDuration };
+    if (filters.maxDuration) query['metadata.duration'] = { ...query['metadata.duration'], $lte: filters.maxDuration };
+    
+    if (filters.minStreams) query['performance.totalStreams'] = { $gte: filters.minStreams };
+    if (filters.minRevenue) query['performance.totalRevenue'] = { $gte: filters.minRevenue };
     
     if (filters.fromDate || filters.toDate) {
-      query['sample.collectionDate'] = {};
-      if (filters.fromDate) query['sample.collectionDate'].$gte = new Date(filters.fromDate);
-      if (filters.toDate) query['sample.collectionDate'].$lte = new Date(filters.toDate);
+      query['metadata.releaseDate'] = {};
+      if (filters.fromDate) query['metadata.releaseDate'].$gte = new Date(filters.fromDate);
+      if (filters.toDate) query['metadata.releaseDate'].$lte = new Date(filters.toDate);
+    }
+    
+    if (filters.tags && filters.tags.length > 0) {
+      query['metadata.tags'] = { $in: filters.tags };
     }
     
     const {
@@ -514,16 +798,16 @@ export class NotarizationService {
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
     const skip = (page - 1) * limit;
     
-    const notarizations = await Notarization
+    const songs = await Song
       .find(query)
       .sort(sort)
       .skip(skip)
       .limit(limit);
       
-    const total = await Notarization.countDocuments(query);
+    const total = await Song.countDocuments(query);
     
     return {
-      notarizations,
+      songs,
       pagination: {
         page,
         limit,
@@ -534,20 +818,23 @@ export class NotarizationService {
   }
   
   /**
-   * Update notarization status
+   * Update song metadata
    */
-  static async updateNotarizationStatus(notarizationId, status, actorInfo = {}) {
+  static async updateSong(songId, updateData, actorInfo = {}) {
     try {
-      const notarization = await Notarization.findOne({ notarizationId });
-      if (!notarization) {
-        throw new Error('Notarization not found');
+      const song = await Song.findOne({ songId });
+      if (!song) {
+        throw new Error('Song not found');
       }
       
-      const oldStatus = notarization.status;
-      notarization.status = status;
-      notarization.updatedAt = new Date();
+      const before = song.toObject();
       
-      await notarization.save();
+      // Update song data
+      Object.assign(song, updateData, { updatedAt: new Date() });
+      await song.save();
+      
+      const after = song.toObject();
+      const changedFields = Object.keys(updateData);
       
       await AuditService.createAuditEntry({
         event: {
@@ -558,23 +845,136 @@ export class NotarizationService {
         actor: actorInfo,
         target: {
           type: 'notarization',
-          id: notarizationId,
-          name: `Sample ${notarization.sample.sampleId}`
+          id: songId,
+          name: `Song ${song.metadata.title}`
         },
         details: {
-          description: `Notarization status changed from ${oldStatus} to ${status}`,
+          description: `Updated song metadata`,
           changes: {
-            before: { status: oldStatus },
-            after: { status: status },
-            fields: ['status']
+            before: Object.fromEntries(changedFields.map(field => [field, before[field]])),
+            after: Object.fromEntries(changedFields.map(field => [field, after[field]])),
+            fields: changedFields
           }
         }
       });
       
-      return notarization;
+      return song;
       
     } catch (error) {
-      throw new Error(`Failed to update notarization: ${error.message}`);
+      throw new Error(`Failed to update song: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Update song performance metrics
+   */
+  static async updateSongPerformance(songId, metrics, actorInfo = {}) {
+    try {
+      const song = await Song.findOne({ songId });
+      if (!song) {
+        throw new Error('Song not found');
+      }
+      
+      // Update performance data
+      song.performance = { ...song.performance, ...metrics, lastUpdated: new Date() };
+      song.updatedAt = new Date();
+      
+      await song.save();
+      
+      await AuditService.createAuditEntry({
+        event: {
+          type: 'data_modified',
+          category: 'data',
+          severity: 'info'
+        },
+        actor: actorInfo,
+        target: {
+          type: 'notarization',
+          id: songId,
+          name: `Song ${song.metadata.title}`
+        },
+        details: {
+          description: `Updated song performance metrics`,
+          metadata: metrics
+        }
+      });
+      
+      return song;
+      
+    } catch (error) {
+      throw new Error(`Failed to update song performance: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Get songs by artist
+   */
+  static async getSongsByArtist(artistId, options = {}) {
+    return await this.searchSongs({ artistId }, options);
+  }
+  
+  /**
+   * Get top performing songs
+   */
+  static async getTopSongs(metric = 'totalStreams', limit = 10) {
+    const sortField = `performance.${metric}`;
+    
+    return await Song
+      .find({ status: { $in: ['published', 'distributed', 'active'] } })
+      .sort({ [sortField]: -1 })
+      .limit(limit)
+      .select('songId metadata.title metadata.artistName performance');
+  }
+  
+  /**
+   * Update distribution status
+   */
+  static async updateDistributionStatus(songId, platform, status, platformData = {}, actorInfo = {}) {
+    try {
+      const song = await Song.findOne({ songId });
+      if (!song) {
+        throw new Error('Song not found');
+      }
+      
+      // Find or create platform entry
+      let platformEntry = song.distribution.platforms.find(p => p.name === platform);
+      
+      if (platformEntry) {
+        platformEntry.status = status;
+        Object.assign(platformEntry, platformData);
+      } else {
+        song.distribution.platforms.push({
+          name: platform,
+          status,
+          ...platformData
+        });
+      }
+      
+      song.updatedAt = new Date();
+      await song.save();
+      
+      await AuditService.createAuditEntry({
+        event: {
+          type: 'data_modified',
+          category: 'data',
+          severity: 'info'
+        },
+        actor: actorInfo,
+        target: {
+          type: 'notarization',
+          id: songId,
+          name: `Song ${song.metadata.title}`
+        },
+        details: {
+          description: `Updated ${platform} distribution status to ${status}`,
+          metadata: { platform, status, ...platformData }
+        }
+      });
+      
+      return song;
+      
+    } catch (error) {
+      throw new Error(`Failed to update distribution status: ${error.message}`);
     }
   }
 }
@@ -849,58 +1249,57 @@ export class UTXOService {
    * Save UTXOs to database (bulk operation)
    */
   static async saveUTXOs(utxos, walletAddress, source = 'blockchain_fetch', actor = 'system') {
-    const session = await UTXO.startSession();
     const savedUTXOs = [];
     
     try {
-      await session.withTransaction(async () => {
-        for (const utxo of utxos) {
-          // Check if UTXO already exists
-          const existing = await UTXO.findOne({
+      // Process UTXOs without sessions for better reliability
+      for (const utxo of utxos) {
+        // Check if UTXO already exists
+        const existing = await UTXO.findOne({
+          txid: utxo.txid,
+          vout: utxo.vout
+        });
+        
+        if (!existing) {
+          const newUTXO = new UTXO({
             txid: utxo.txid,
-            vout: utxo.vout
-          }).session(session);
+            vout: utxo.vout,
+            satoshis: utxo.satoshis,
+            script: utxo.script,
+            scriptPubKey: utxo.scriptPubKey || utxo.script,
+            walletAddress,
+            blockHeight: utxo.blockHeight || 0,
+            confirmations: utxo.confirmations || 0,
+            fetchedAt: utxo.fetchedAt || new Date(),
+            source,
+            status: utxo.status || 'available',
+            createdBy: actor,
+            updatedBy: actor
+          });
           
-          if (!existing) {
-            const newUTXO = new UTXO({
-              txid: utxo.txid,
-              vout: utxo.vout,
-              satoshis: utxo.satoshis,
-              script: utxo.script,
-              scriptPubKey: utxo.scriptPubKey || utxo.script,
-              walletAddress,
-              blockHeight: utxo.blockHeight || 0,
-              confirmations: utxo.confirmations || 0,
-              fetchedAt: utxo.fetchedAt || new Date(),
-              source,
-              createdBy: actor,
-              updatedBy: actor
-            });
-            
-            await newUTXO.save({ session });
-            savedUTXOs.push(newUTXO);
+          await newUTXO.save();
+          savedUTXOs.push(newUTXO);
+        }
+      }
+      
+      // Create audit trail
+      await AuditService.createAuditEntry({
+        event: {
+          type: 'bulk_create',
+          category: 'utxo_management',
+          severity: 'info'
+        },
+        actor: { userId: actor, type: 'system' },
+        target: { type: 'utxo_collection', id: walletAddress },
+        details: {
+          description: `Saved ${savedUTXOs.length} new UTXOs for wallet ${walletAddress}`,
+          metadata: {
+            totalUTXOs: utxos.length,
+            newUTXOs: savedUTXOs.length,
+            source,
+            totalSatoshis: savedUTXOs.reduce((sum, u) => sum + u.satoshis, 0)
           }
         }
-        
-        // Create audit trail
-          await AuditService.createAuditEntry({
-            event: {
-              type: 'bulk_create',
-              category: 'utxo_management',
-              severity: 'info'
-            },
-            actor: { userId: actor, type: 'system' },
-            target: { type: 'utxo_collection', id: walletAddress },
-            details: {
-              description: `Saved ${savedUTXOs.length} new UTXOs for wallet ${walletAddress}`,
-              metadata: {
-                totalUTXOs: utxos.length,
-                newUTXOs: savedUTXOs.length,
-                source,
-                totalSatoshis: savedUTXOs.reduce((sum, u) => sum + u.satoshis, 0)
-              }
-            }
-          });
       });
       
       return {
@@ -912,8 +1311,6 @@ export class UTXOService {
       
     } catch (error) {
       throw new Error(`Failed to save UTXOs: ${error.message}`);
-    } finally {
-      await session.endSession();
     }
   }
   

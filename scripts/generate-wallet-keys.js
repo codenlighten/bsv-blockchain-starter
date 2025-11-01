@@ -45,7 +45,15 @@ const log = {
 class WalletGenerator {
   constructor(options = {}) {
     this.options = options;
-    this.network = options.network || 'main';
+    // Map network names to BSV library format
+    const networkMap = {
+      'main': 'livenet',
+      'test': 'testnet',
+      'livenet': 'livenet',
+      'testnet': 'testnet',
+      'regtest': 'regtest'
+    };
+    this.network = networkMap[options.network] || 'livenet';
     this.walletsDir = './wallets';
   }
 
@@ -223,22 +231,27 @@ class WalletGenerator {
 Enhanced BSV Wallet Generator
 
 Usage:
-  npm run generate-keys [-- options]
+  npm run generate-keys [network] [-- options]
+
+Positional Arguments:
+  network              Network: livenet (default), testnet, or regtest
 
 Options:
   --type <type>        Generate specific wallet (funding, publishing, sweep)
   --all               Generate all three wallet types
   --wif <wif_key>     Import wallet from WIF private key
-  --network <net>     Network: main (default) or test
+  --network <net>     Network: livenet, testnet, regtest, main, or test
   --force             Overwrite existing wallets
   --interactive       Ask before overwriting existing wallets
   --help              Show this help message
 
 Examples:
-  npm run generate-keys                                # Generate funding wallet
+  npm run generate-keys                                # Generate funding wallet (livenet)
+  npm run generate-keys livenet                        # Generate funding wallet (livenet)
+  npm run generate-keys testnet                        # Generate funding wallet (testnet)
   npm run generate-keys -- --type publishing          # Generate publishing wallet
   npm run generate-keys -- --all                      # Generate all wallets
-  npm run generate-keys -- --all --network test       # Generate testnet wallets
+  npm run generate-keys testnet -- --all              # Generate all testnet wallets
   npm run generate-keys -- --wif L1abc...             # Import from WIF key
   npm run generate-keys -- --all --force              # Overwrite existing wallets
 
@@ -254,6 +267,15 @@ Wallet Types:
 function parseArgs() {
   const args = process.argv.slice(2);
   const options = {};
+  
+  // Handle first positional argument as network if it's a valid network
+  if (args.length > 0 && !args[0].startsWith('--')) {
+    const firstArg = args[0];
+    if (['livenet', 'testnet', 'regtest', 'main', 'test'].includes(firstArg)) {
+      options.network = firstArg;
+      args.shift(); // Remove the processed argument
+    }
+  }
   
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
